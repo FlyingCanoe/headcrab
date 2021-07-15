@@ -72,7 +72,7 @@ pub struct ParsedDwarf<'a> {
     vars: BTreeMap<
         String,
         (
-            gimli::CompilationUnitHeader<Reader<'a>>,
+            gimli::UnitHeader<Reader<'a>>,
             gimli::Expression<Reader<'a>>,
         ),
     >,
