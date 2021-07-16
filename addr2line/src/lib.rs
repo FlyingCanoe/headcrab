@@ -886,18 +886,26 @@ impl<'ctx> Iterator for LocationRangeUnitIter<'ctx> {
                         .map(|row| row.address)
                         .unwrap_or(seq.end);
 
+                    let location = if let Some(file) = file {
+                        if row.line != 0 {
+                            if row.column != 0 {
+                                Location::Column {path: file, line: row.line, column: row.column}    
+                            } else {
+                                Location::Line {path: file, line: row.line}
+                            }
+                        } else {
+                            Location::File { path: file }
+                        }
+                    } else {
+                        // if we enconter a invalide location, we return none.
+                        // todo is this the intendant behavior?
+                        return None
+                    };
+                        
                     let item = (
                         row.address,
                         nextaddr - row.address,
-                        Location {
-                            file,
-                            line: if row.line != 0 { Some(row.line) } else { None },
-                            column: if row.column != 0 {
-                                Some(row.column)
-                            } else {
-                                None
-                            },
-                        },
+                        location,
                     );
                     self.row_idx += 1;
 
@@ -1051,25 +1059,35 @@ where
             }
         };
 
-        let mut next = Location {
-            file: None,
-            line: if func.call_line != 0 {
-                Some(func.call_line)
-            } else {
-                None
-            },
-            column: if func.call_column != 0 {
-                Some(func.call_column)
-            } else {
-                None
-            },
-        };
-        if func.call_file != 0 {
+        // check if func can be mapped to a valid Location
+
+        // if the call file number is zero, it is not valid
+        // as the entry zero represent the compilation directory.
+        frames.next = if func.call_file != 0 {
+            // if the parsed line info is empty, no Location can be produce.
             if let Some(lines) = frames.unit.parse_lines(frames.sections)? {
-                next.file = lines.files.get(func.call_file as usize).map(String::as_str);
+                // if the file number of func is not mapped to a path in the line info, it is not valid.
+                if let Some(file) = lines.files.get(func.call_file as usize).map(String::as_str) {
+                    // if the call line is zero, it mean that the instruction can not be attributed to any line.
+                    // as such, the Location can not have a level of granularity superior to that of a file.
+                    if func.call_line != 0 {
+                        // if the call column is zero, it mean that the instruction is attributed to the whole line.
+                        // as such, the Location can not have a level of granularity superior to that of a line.
+                        if func.call_column != 0 {
+                            Some(Location::Column {path: file, line: func.call_line, column: func.call_column})
+                        } else {
+                            Some(Location::Line {path: file, line: func.call_line})
+                        }
+                    } else {
+                        Some(Location::File {path: file})
+                    }
+                } else {None}
+            } else {
+                None
             }
-        }
-        frames.next = Some(next);
+        } else {
+            None
+        };
 
         Ok(Some(Frame {
             dw_die_offset: Some(func.dw_die_offset),
@@ -1167,14 +1185,19 @@ pub fn demangle_auto(name: Cow<str>, language: Option<gimli::DwLang>) -> Cow<str
     .unwrap_or(name)
 }
 
+
+// the missing doc lint would require that documentation on individual
+// field of struct variant which would be awkward, so a disable it.
+
 /// A source location.
-pub struct Location<'a> {
-    /// The file name.
-    pub file: Option<&'a str>,
-    /// The line number.
-    pub line: Option<u32>,
-    /// The column number.
-    pub column: Option<u32>,
+#[allow(missing_docs)]
+pub enum Location<'a> {
+    /// A source location with a file granularity.
+    File {path: &'a str},
+    /// A source location with a line granularity
+    Line {path: &'a str, line: u32},
+    /// A source location with a column granularity
+    Column {path: &'a str, line: u32, column: u32},
 }
 
 #[cfg(test)]
