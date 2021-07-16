@@ -299,8 +299,8 @@ mod example {
                                             .map(|loc| {
                                                 format!(
                                                     "{}:{}",
-                                                    loc.file.unwrap_or("<unknown file>"),
-                                                    loc.line.unwrap_or(0),
+                                                    loc.file(),
+                                                    loc.line().unwrap_or(0),
                                                 )
                                             })
                                             .unwrap_or_default();

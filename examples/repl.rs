@@ -440,8 +440,8 @@ mod example {
                             .map(|loc| {
                                 format!(
                                     "{}:{}",
-                                    loc.file.unwrap_or("<unknown file>"),
-                                    loc.line.unwrap_or(0),
+                                    loc.file(),
+                                    loc.line().unwrap_or(0),
                                 )
                             })
                             .unwrap_or_default();
@@ -496,8 +496,8 @@ mod example {
                         .map(|loc| {
                             format!(
                                 "{}:{}",
-                                loc.file.unwrap_or("<unknown file>"),
-                                loc.line.unwrap_or(0),
+                                loc.file(),
+                                loc.line().unwrap_or(0),
                             )
                         })
                         .unwrap_or_default();
@@ -637,9 +637,9 @@ mod example {
                         .as_ref()
                         .map(|loc| {
                             (
-                                loc.file.unwrap_or("<unknown file>"),
-                                loc.line.unwrap_or(0),
-                                loc.column.unwrap_or(0),
+                                loc.file(),
+                                loc.line().unwrap_or(0),
+                                loc.column().unwrap_or(0),
                             )
                         })
                         .unwrap_or_default();

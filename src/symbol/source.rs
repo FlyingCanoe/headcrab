@@ -63,11 +63,10 @@ impl super::Dwarf {
                 .ok_or_else(|| "source location not found".to_string())?;
             Ok((
                 location
-                    .file
-                    .ok_or_else(|| "Unknown file".to_string())?
+                    .file()
                     .to_string(),
-                location.line.unwrap_or(0) as u64,
-                location.column.unwrap_or(0) as u64,
+                location.line().unwrap_or(0) as u64,
+                location.column().unwrap_or(0) as u64,
             ))
         })
     }

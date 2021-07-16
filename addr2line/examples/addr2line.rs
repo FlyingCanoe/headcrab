@@ -47,7 +47,7 @@ impl<'a> Iterator for Addrs<'a> {
 
 fn print_loc(loc: &Option<Location>, basenames: bool, llvm: bool) {
     if let Some(ref loc) = *loc {
-        let file = loc.file.as_ref().unwrap();
+        let file = loc.file();
         let path = if basenames {
             Path::new(Path::new(file).file_name().unwrap())
         } else {
@@ -55,8 +55,8 @@ fn print_loc(loc: &Option<Location>, basenames: bool, llvm: bool) {
         };
         print!("{}:", path.display());
         if llvm {
-            print!("{}:{}", loc.line.unwrap_or(0), loc.column.unwrap_or(0));
-        } else if let Some(line) = loc.line {
+            print!("{}:{}", loc.line().unwrap_or(0), loc.column().unwrap_or(0));
+        } else if let Some(line) = loc.line() {
             print!("{}", line);
         } else {
             print!("?");

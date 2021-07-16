@@ -1185,7 +1185,6 @@ pub fn demangle_auto(name: Cow<str>, language: Option<gimli::DwLang>) -> Cow<str
     .unwrap_or(name)
 }
 
-
 // the missing doc lint would require that documentation on individual
 // field of struct variant which would be awkward, so a disable it.
 
@@ -1198,6 +1197,35 @@ pub enum Location<'a> {
     Line {path: &'a str, line: u32},
     /// A source location with a column granularity
     Column {path: &'a str, line: u32, column: u32},
+}
+
+impl<'a> Location<'a> {
+    /// Return the path of the file of this `Location`.
+    pub fn file(&self) -> &str {
+        match self {
+            Location::File { path } => path,
+            Location::Line { path, .. } => path,
+            Location::Column { path, .. } => path,
+        }
+    }
+
+    /// Return the line number of this `Location` if it is specify.
+    pub fn line(&self) -> Option<u32> {
+        match self {
+            Location::File { .. } => None,
+            Location::Line { line, .. } => Some(*line),
+            Location::Column { line, .. } => Some(*line),
+        }
+    }
+
+    /// Return the column number of this `Location` if it is specify.
+    pub fn column(&self) -> Option<u32> {
+        match self {
+            Location::File { .. } => None,
+            Location::Line { .. } => None,
+            Location::Column { column, .. } => Some(*column),
+        }
+    }
 }
 
 #[cfg(test)]
