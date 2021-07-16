@@ -1,7 +1,7 @@
-use alloc::boxed::Box;
-use alloc::vec::Vec;
-use core::cmp::Ordering;
-use core::iter;
+use std::boxed::Box;
+use std::vec::Vec;
+use std::cmp::Ordering;
+use std::iter;
 
 use crate::lazy::LazyCell;
 use crate::maybe_small;
