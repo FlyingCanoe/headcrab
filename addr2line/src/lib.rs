@@ -1190,6 +1190,7 @@ pub fn demangle_auto(name: Cow<str>, language: Option<gimli::DwLang>) -> Cow<str
 
 /// A source location.
 #[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Location<'a> {
     /// A source location with a file granularity.
     File {path: &'a str},
@@ -1200,6 +1201,22 @@ pub enum Location<'a> {
 }
 
 impl<'a> Location<'a> {
+
+    /// Return true if `self` and `other` are equal or if `self` is a superset of `other`
+    pub fn contain(&self, other: &Self) -> bool {
+        match self {
+            Location::File {path} => {
+                *path == other.file()
+            },
+            Location::Line{path, line} => {
+                *path == other.file() && Some(*line) == other.line()
+            }
+            Location::Column{..} => {
+                self == other
+            }
+        }
+    }
+
     /// Return the path of the file of this `Location`.
     pub fn file(&self) -> &str {
         match self {
