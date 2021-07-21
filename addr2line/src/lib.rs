@@ -921,9 +921,16 @@ impl<'ctx> Iterator for LocationRangeUnitIter<'ctx> {
                     let location = if let Some(file) = file {
                         if row.line != 0 {
                             if row.column != 0 {
-                                Location::Column {path: file, line: row.line, column: row.column}    
+                                Location::Column {
+                                    path: file,
+                                    line: row.line,
+                                    column: row.column,
+                                }
                             } else {
-                                Location::Line {path: file, line: row.line}
+                                Location::Line {
+                                    path: file,
+                                    line: row.line,
+                                }
                             }
                         } else {
                             Location::File { path: file }
@@ -931,14 +938,10 @@ impl<'ctx> Iterator for LocationRangeUnitIter<'ctx> {
                     } else {
                         // if we enconter a invalide location, we return none.
                         // todo is this the intendant behavior?
-                        return None
+                        return None;
                     };
-                        
-                    let item = (
-                        row.address,
-                        nextaddr - row.address,
-                        location,
-                    );
+
+                    let item = (row.address, nextaddr - row.address, location);
                     self.row_idx += 1;
 
                     return Some(item);
@@ -1106,14 +1109,23 @@ where
                         // if the call column is zero, it mean that the instruction is attributed to the whole line.
                         // as such, the Location can not have a level of granularity superior to that of a line.
                         if func.call_column != 0 {
-                            Some(Location::Column {path: file, line: func.call_line, column: func.call_column})
+                            Some(Location::Column {
+                                path: file,
+                                line: func.call_line,
+                                column: func.call_column,
+                            })
                         } else {
-                            Some(Location::Line {path: file, line: func.call_line})
+                            Some(Location::Line {
+                                path: file,
+                                line: func.call_line,
+                            })
                         }
                     } else {
-                        Some(Location::File {path: file})
+                        Some(Location::File { path: file })
                     }
-                } else {None}
+                } else {
+                    None
+                }
             } else {
                 None
             }
@@ -1225,27 +1237,24 @@ pub fn demangle_auto(name: Cow<str>, language: Option<gimli::DwLang>) -> Cow<str
 #[derive(Debug, Clone, PartialEq)]
 pub enum Location<'a> {
     /// A source location with a file granularity.
-    File {path: &'a str},
+    File { path: &'a str },
     /// A source location with a line granularity
-    Line {path: &'a str, line: u32},
+    Line { path: &'a str, line: u32 },
     /// A source location with a column granularity
-    Column {path: &'a str, line: u32, column: u32},
+    Column {
+        path: &'a str,
+        line: u32,
+        column: u32,
+    },
 }
 
 impl<'a> Location<'a> {
-
     /// Return true if `self` and `other` are equal or if `self` is a superset of `other`
     pub fn contain(&self, other: &Self) -> bool {
         match self {
-            Location::File {path} => {
-                *path == other.file()
-            },
-            Location::Line{path, line} => {
-                *path == other.file() && Some(*line) == other.line()
-            }
-            Location::Column{..} => {
-                self == other
-            }
+            Location::File { path } => *path == other.file(),
+            Location::Line { path, line } => *path == other.file() && Some(*line) == other.line(),
+            Location::Column { .. } => self == other,
         }
     }
 
