@@ -199,4 +199,31 @@ impl RelocatedDwarf {
         }
         Ok(None)
     }
+
+    /// Find a address for each substatement in the `Location`.
+    /// This function return a hashmap where the key are the column number of the statement,
+    /// and where the value is a address of a instruction from that statement.
+    /// If the `Location` specify a column number, the hashmap will only contain one value.
+    pub fn find_location_addr(
+        &self,
+        location: &addr2line::Location,
+    ) -> CrabResult<HashMap<Option<NonZeroU32>, u64>> {
+        let mut addresses = HashMap::new();
+        for entry in &self.0 {
+            let mut ignore_entry = false;
+
+            if !ignore_entry {
+                addresses.extend(entry.dwarf.find_location_addr(location)?.into_iter().map(
+                    |(column, addr)| {
+                        if addr + entry.bias >= entry.address_range.0 + entry.address_range.1 {
+                            ignore_entry = true;
+                        }
+
+                        (column, addr + entry.bias)
+                    },
+                ))
+            }
+        }
+        Ok(addresses)
+    }
 }

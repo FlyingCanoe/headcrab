@@ -14,6 +14,7 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap},
     fs::File,
+    num::NonZeroU32,
     path::Path,
 };
 pub use sym::Symbol;
@@ -227,6 +228,17 @@ impl<'a> ParsedDwarf<'a> {
             iter: self.addr2line.find_frames(addr as u64)?,
         })
     }
+
+    /// Find a address for each substatement in the `Location`.
+    /// This function return a hashmap where the key are the column number of the statement,
+    /// and where the value is a address of a instruction from that statement.
+    /// If the `Location` specify a column number, the hashmap will only contain one value.
+    pub fn find_location_addr(
+        &'a self,
+        location: &addr2line::Location,
+    ) -> CrabResult<HashMap<Option<NonZeroU32>, u64>> {
+        Ok(self.addr2line.find_addresses(location)?)
+    }
 }
 
 mod inner {
@@ -321,5 +333,16 @@ impl Dwarf {
         f: F,
     ) -> CrabResult<T> {
         self.rent(|parsed| f(addr, parsed.get_addr_frames(addr)?))
+    }
+
+    /// Find a address for each substatement in the `Location`.
+    /// This function return a hashmap where the key are the column number of the statement,
+    /// and where the value is a address of a instruction from that statement.
+    /// If the `Location` specify a column number, the hashmap will only contain one value.
+    pub fn find_location_addr(
+        &self,
+        location: &addr2line::Location,
+    ) -> CrabResult<HashMap<Option<NonZeroU32>, u64>> {
+        self.rent(|parsed| parsed.find_location_addr(location))
     }
 }
