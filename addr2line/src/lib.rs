@@ -274,6 +274,24 @@ impl<R: gimli::Reader> Context<R> {
         None
     }
 
+    /// Find all address that are in the Location.
+    pub fn find_addresses(self, location: Location) -> Result<Vec<u64>, Error> {
+        let mut addr_list = Vec::new();
+
+        // for each unit individualy, check if it contain the location.
+        for unit in &self.dwarf.units {
+            if let Some(line) = unit.parse_lines(self.dwarf())? {
+                // if the unit contains the location, add the address
+                // list link to the location in this unit to the total.
+                if line.files.contains(&location.file().to_string()) {
+                    let mut unit_addr_list = unit.find_address(&location, self.dwarf())?;
+                    addr_list.append(&mut unit_addr_list)
+                }
+            }
+        }
+        Ok(addr_list)
+    }
+
     /// Find the source file and line corresponding to the given virtual memory address.
     pub fn find_location(&self, probe: u64) -> Result<Option<Location<'_>>, Error> {
         for unit in self.find_units(probe) {
@@ -634,6 +652,20 @@ impl<R: gimli::Reader> ResUnit<R> {
             .as_ref()
             .map_err(Error::clone)?
             .parse_inlined_functions(&self.dw_unit, dwarf)
+    }
+
+    fn find_address(&self, target: &Location, dwarf: &gimli::Dwarf<R>) -> Result<Vec<u64>, Error> {
+        let mut addr_list = Vec::new();
+        // iterate ever each location in the unit
+        if let Some(loc_iter) = LocationRangeUnitIter::new(self, dwarf, 0, u64::MAX)? {
+            for (addr, _, location) in loc_iter {
+                // if the target location include the location, add the addr to the list.
+                if target.contain(&location) {
+                    addr_list.push(addr)
+                }
+            }
+        }
+        Ok(addr_list)
     }
 
     fn find_location(
