@@ -391,24 +391,9 @@ mod example {
     fn set_breakpoint(context: &mut Context, location: &str) -> CrabResult<()> {
         context.load_debuginfo_if_necessary()?;
 
-        if let Ok(addr) = {
-            usize::from_str_radix(&location, 10)
-                .map(|addr| addr as usize)
-                .map_err(|e| Box::new(e))
-                .or_else(|_e| {
-                    if location.starts_with("0x") {
-                        let raw_num = location.trim_start_matches("0x");
-                        usize::from_str_radix(raw_num, 16)
-                            .map(|addr| addr as usize)
-                            .map_err(|_e| Box::new(format!("Invalid address format.")))
-                    } else {
-                        context
-                            .debuginfo()
-                            .get_symbol_address(&location)
-                            .ok_or(Box::new(format!("No such symbol {}", location)))
-                    }
-                })
-        } {
+        let addr = parse_address(&location).or(parse_symbole(&location, context));
+
+        if let Some(addr) = addr {
             context.mut_remote()?.set_breakpoint(addr)?;
         } else {
             Err(format!(
@@ -416,6 +401,24 @@ mod example {
             ))?
         }
         Ok(())
+    }
+
+    fn parse_address(location: &str) -> Option<usize> {
+        if let Ok(addr) = usize::from_str_radix(&location, 10) {
+            return Some(addr);
+        } else {
+            if location.starts_with("0x") {
+                let raw_num = location.trim_start_matches("0x");
+                if let Ok(addr) = usize::from_str_radix(raw_num, 16) {
+                    return Some(addr);
+                }
+            }
+        }
+        None
+    }
+
+    fn parse_symbole(location: &str, context: &mut Context) -> Option<usize> {
+        context.debuginfo().get_symbol_address(&location)
     }
 
     fn show_backtrace(context: &mut Context, bt_type: &BacktraceType) -> CrabResult<()> {
