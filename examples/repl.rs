@@ -391,7 +391,7 @@ mod example {
     fn set_breakpoint(context: &mut Context, location: &str) -> CrabResult<()> {
         context.load_debuginfo_if_necessary()?;
 
-        let addr = parse_address(&location).or(parse_symbole(&location, context));
+        let addr = parse_address(&location).or(parse_symbol(&location, context));
 
         if let Some(addr) = addr {
             context.mut_remote()?.set_breakpoint(addr)?;
@@ -417,7 +417,7 @@ mod example {
         None
     }
 
-    fn parse_symbole(location: &str, context: &mut Context) -> Option<usize> {
+    fn parse_symbol(location: &str, context: &mut Context) -> Option<usize> {
         context.debuginfo().get_symbol_address(&location)
     }
 
@@ -440,13 +440,7 @@ mod example {
                         let location = frame
                             .location
                             .as_ref()
-                            .map(|loc| {
-                                format!(
-                                    "{}:{}",
-                                    loc.file(),
-                                    loc.line().unwrap_or(0),
-                                )
-                            })
+                            .map(|loc| format!("{}:{}", loc.file(), loc.line().unwrap_or(0),))
                             .unwrap_or_default();
 
                         if first_frame {
@@ -496,13 +490,7 @@ mod example {
                     let location = frame
                         .location
                         .as_ref()
-                        .map(|loc| {
-                            format!(
-                                "{}:{}",
-                                loc.file(),
-                                loc.line().unwrap_or(0),
-                            )
-                        })
+                        .map(|loc| format!("{}:{}", loc.file(), loc.line().unwrap_or(0),))
                         .unwrap_or_default();
 
                     if first_frame {
