@@ -275,7 +275,7 @@ impl<R: gimli::Reader> Context<R> {
     }
 
     /// Find all address that are in the Location.
-    pub fn find_addresses(self, location: Location) -> Result<Vec<u64>, Error> {
+    pub fn find_addresses(&self, location: Location) -> Result<Vec<u64>, Error> {
         let mut addr_list = Vec::new();
 
         // for each unit individualy, check if it contain the location.
