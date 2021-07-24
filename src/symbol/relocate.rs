@@ -199,4 +199,24 @@ impl RelocatedDwarf {
         }
         Ok(None)
     }
+
+    pub fn find_location_addr(&self, location: &addr2line::Location) -> CrabResult<Vec<usize>> {
+        let mut addresses = Vec::new();
+        for entry in &self.0 {
+            let mut ignore_entry = false;
+
+           let mut entry_addr = entry.dwarf.find_location_addr(location)?.into_iter().map(|addr: u64| {
+                if addr + entry.bias >= entry.address_range.0 + entry.address_range.1 {
+                    ignore_entry = true;
+                }
+
+                (addr + entry.bias) as usize
+            }).collect();
+            
+            if !ignore_entry {
+                addresses.append(&mut entry_addr)
+            }
+        }
+        Ok(addresses)
+    }
 }

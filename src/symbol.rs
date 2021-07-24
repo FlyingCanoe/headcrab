@@ -233,6 +233,10 @@ impl<'a> ParsedDwarf<'a> {
             iter: self.addr2line.find_frames(addr as u64)?,
         })
     }
+
+    pub fn find_location_addr(&'a self, location: &addr2line::Location) -> CrabResult<Vec<u64>> {
+        Ok(self.addr2line.find_addresses(location)?)
+    }
 }
 
 mod inner {
@@ -327,5 +331,9 @@ impl Dwarf {
         f: F,
     ) -> CrabResult<T> {
         self.rent(|parsed| f(addr, parsed.get_addr_frames(addr)?))
+    }
+
+    pub fn find_location_addr(&self, location: &addr2line::Location) -> CrabResult<Vec<u64>> {
+        self.rent(|parsed| parsed.find_location_addr(location))
     }
 }
