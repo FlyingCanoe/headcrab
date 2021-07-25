@@ -391,7 +391,18 @@ mod example {
     fn set_breakpoint(context: &mut Context, location: &str) -> CrabResult<()> {
         context.load_debuginfo_if_necessary()?;
 
-        let addr = parse_address(&location).or(parse_symbol(&location, context));
+        let addr = parse_address(&location)
+            .or(parse_symbol(&location, context))
+            .or(parse_source_location(location).map_or(None, |loc| {
+                context
+                    .debuginfo
+                    .as_ref()
+                    .unwrap() // this unwrap cannot fail due to the call to load_debuginfo_if_necessary
+                    .find_location_addr(&loc)
+                    .unwrap() // todo: this unwrap could fail if the debugee contain invalid debug info.
+                    .get(0)
+                    .cloned()
+            }));
 
         if let Some(addr) = addr {
             context.mut_remote()?.set_breakpoint(addr)?;
@@ -419,6 +430,28 @@ mod example {
 
     fn parse_symbol(location: &str, context: &mut Context) -> Option<usize> {
         context.debuginfo().get_symbol_address(&location)
+    }
+
+    fn parse_source_location(location: &str) -> Option<addr2line::Location> {
+        use addr2line::Location;
+
+        let mut iter = location.split(":");
+        let file = iter.next();
+        let line = iter.next().map_or(None, parse_address);
+        let column = iter.next().map_or(None, parse_address);
+
+        match (file, line, column) {
+            (Some(file), Some(line), None) => Some(Location::Line {
+                path: file,
+                line: line as u32,
+            }),
+            (Some(file), Some(line), Some(column)) => Some(Location::Column {
+                path: file,
+                line: line as u32,
+                column: column as u32,
+            }),
+            _ => None,
+        }
     }
 
     fn show_backtrace(context: &mut Context, bt_type: &BacktraceType) -> CrabResult<()> {
